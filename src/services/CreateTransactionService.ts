@@ -1,7 +1,8 @@
 // import AppError from '../errors/AppError';
-import { getRepository } from 'typeorm';
+import { getRepository, getCustomRepository } from 'typeorm';
 import Transaction from '../models/Transaction';
 import Category from '../models/Category';
+import TransactionsRepository from '../repositories/TransactionsRepository';
 
 interface Request {
   title: string;
@@ -17,6 +18,16 @@ class CreateTransactionService {
     value,
     category,
   }: Request): Promise<Transaction> {
+    const transactionCustomRepository = getCustomRepository(
+      TransactionsRepository,
+    );
+
+    const balance = await transactionCustomRepository.getBalance();
+
+    if (type === 'outcome' && value > balance.total) {
+      throw new Error('The outcome is over your balance');
+    }
+
     const CategoriesRepository = getRepository(Category);
 
     const categoryReturned = await CategoriesRepository.findOne({
